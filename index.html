@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#123f35">
 <meta name="color-scheme" content="light dark">
-<meta name="description" content="Dein Angelinventar. Lokal auf deinem Gerät, ohne Konto und ohne Cloud.">
-<title>Angelinventar – Alles bereit fürs Wasser</title>
+<meta name="description" content="Dein Angel Inventar auf deinem Gerät, ohne Konto und ohne Cloud.">
+<title>FishVentar – Alles bereit fürs Wasser</title>
 <style>
 :root{--bg:#f3f5ef;--paper:#fff;--ink:#193c32;--muted:#5e7066;--green:#123f35;--accent:#d5edac;--line:#dce4d9;--soft:#e8eee3;--danger:#a32828;--warn:#fff2d8;--warnink:#6f4900;--shadow:0 14px 45px #123f3510;--white:#fff;--overlay:#091d18a8;color-scheme:light;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 @media(prefers-color-scheme:dark){:root{--bg:#0f201b;--paper:#182d25;--ink:#e6efe3;--muted:#b0c0b3;--line:#354b3c;--soft:#293f31;--danger:#ffaaaa;--warn:#453719;--warnink:#ffdfa4;--shadow:0 14px 45px #00000020;color-scheme:dark}}
@@ -69,7 +69,7 @@ function validateItem(raw){
  return {id,name,category:raw.category,brand:cleanString(raw.brand,'Marke',120),model:cleanString(raw.model,'Modell',120),quantity:raw.quantity,location:cleanString(raw.location,'Lagerort',160),condition:raw.condition,price:raw.price===null?null:Math.round(raw.price*100)/100,notes:cleanString(raw.notes,'Notizen',4000)};
 }
 function validateBackup(data){
- if(!data||typeof data!=='object'||Array.isArray(data)||data.app!=='Angelinventar'||data.version!==1||!Array.isArray(data.items))throw new Error('Keine kompatible Angelinventar-Sicherung (Version 1).');
+ if(!data||typeof data!=='object'||Array.isArray(data)||data.app!=='FishVentar'||data.version!==1||!Array.isArray(data.items))throw new Error('Keine kompatible Angel Inventar-Sicherung (Version 1).');
  if(data.items.length>10000)throw new Error('Maximal 10.000 Einträge pro Sicherung.');
  const result=data.items.map((item,index)=>{try{return validateItem(item);}catch(e){throw new Error('Eintrag '+(index+1)+': '+e.message);}}),ids=new Set();
  for(const item of result){if(ids.has(item.id))throw new Error('Die Sicherung enthält doppelte IDs.');ids.add(item.id);}return result;
@@ -81,7 +81,7 @@ function persist(manual=false){
  try{
   const previous=localStorage.getItem(KEY);
   if(previous!==null){try{validateBackup(JSON.parse(previous));}catch(e){storageBlocked=true;storageFailure('Ein vorhandener Datenbestand ist nicht sicher lesbar. Deshalb ist Speichern gesperrt.');return false;}}
-  const savedAt=new Date().toISOString(),payload=JSON.stringify({app:'Angelinventar',version:1,savedAt,items});
+  const savedAt=new Date().toISOString(),payload=JSON.stringify({app:'FishVentar',version:1,savedAt,items});
   localStorage.setItem(KEY,payload);
   if(localStorage.getItem(KEY)!==payload)throw new Error('Die Leseprüfung ist fehlgeschlagen.');
   lastSaved=savedAt;dirty=false;persistent=true;$('storageWarning').hidden=true;updateSaveStatus();return true;
@@ -115,7 +115,7 @@ function askDelete(item){deleteId=item.id;$('confirmText').textContent='„'+ite
 $('confirmDelete').addEventListener('click',()=>{items=items.filter(x=>x.id!==deleteId);persist();render();$('confirmDialog').close();deleteId=null;message('Eintrag gelöscht.');});$('cancelDelete').addEventListener('click',()=>$('confirmDialog').close());
 $('addTop').addEventListener('click',()=>openEditor());$('addEmpty').addEventListener('click',()=>{if(items.length){selected='Alle';$('search').value='';render();}else openEditor();});$('closeEditor').addEventListener('click',closeEditor);$('cancelEditor').addEventListener('click',closeEditor);$('search').addEventListener('input',render);
 for(const category of ['Alle',...CATEGORIES]){const b=button(category,()=>{selected=category;render();});b.dataset.category=category;b.setAttribute('aria-pressed',String(category==='Alle'));$('filters').append(b);}
-$('exportBtn').addEventListener('click',()=>{try{const data={app:'Angelinventar',version:1,exportedAt:new Date().toISOString(),items},blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=element('a');a.href=url;a.download='angelinventar-'+new Date().toISOString().slice(0,10)+'.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);message('Dateisicherung als JSON angefordert. Prüfe den Download im Browser; die App wählt keinen beliebigen Handy-Ordner. Bewahre die Datei außerhalb des Repositorys sicher auf.');}catch(e){message('Export in dieser Umgebung nicht möglich. Bitte in einem normalen Browser öffnen.');}});
+$('exportBtn').addEventListener('click',()=>{try{const data={app:'FishVentar',version:1,exportedAt:new Date().toISOString(),items},blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=element('a');a.href=url;a.download='angelinventar-'+new Date().toISOString().slice(0,10)+'.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);message('Dateisicherung als JSON angefordert. Prüfe den Download im Browser; die App wählt keinen beliebigen Handy-Ordner. Bewahre die Datei außerhalb des Repositorys sicher auf.');}catch(e){message('Export in dieser Umgebung nicht möglich. Bitte in einem normalen Browser öffnen.');}});
 $('importBtn').addEventListener('click',()=>{$('importFile').value='';$('importFile').click();});
 $('importFile').addEventListener('change',async()=>{const file=$('importFile').files[0];if(!file)return;try{if(file.size>10*1024*1024)throw new Error('Die Datei ist größer als 10 MB.');const data=validateBackup(JSON.parse(await file.text()));pendingImport=data;const ids=new Set(items.map(x=>x.id)),duplicates=data.filter(x=>ids.has(x.id)).length;$('importSummary').textContent=data.length+' geprüfte Einträge. Aktuell vorhanden: '+items.length+'. Gleiche IDs: '+duplicates+'.';$('replaceConfirm').hidden=true;$('importDialog').showModal();}catch(e){pendingImport=null;message('Import abgelehnt: '+e.message+' Dein Bestand ist unverändert.');}});
 function applyImport(replace){if(!pendingImport)return;const ids=new Set(items.map(x=>x.id));const next=replace?pendingImport:[...items,...pendingImport.filter(x=>!ids.has(x.id))];if(next.length>10000){message('Import abgelehnt: zusammen mehr als 10.000 Einträge.');return;}items=next;pendingImport=null;persist();selected='Alle';$('search').value='';render();$('importDialog').close();message('Sicherung '+(replace?'übernommen.':'zusammengeführt.'));}
